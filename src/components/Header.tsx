@@ -23,8 +23,8 @@ export default function Header({ userName }: HeaderProps) {
         <span className="text-[#202020] font-medium">{formattedDate}</span>
       </div>
 
-      {/* ユーザー情報 */}
-      <div className="flex items-center gap-3">
+      {/* ユーザー情報（モバイルのみ表示） */}
+      <div className="flex items-center gap-3 md:hidden">
         <span className="text-sm text-[#666666]">{userName}</span>
         <div className="w-8 h-8 rounded-full bg-[#DC4C3E] flex items-center justify-center text-white text-sm font-medium">
           {userName.charAt(0)}
