@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { createBrowserClient } from '@supabase/ssr'
 
 type Props = {
   isOpen: boolean
@@ -22,87 +20,26 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
     setError(null)
     setLoading(true)
 
-    // メインのSupabaseクライアント（親のセッション）
-    const supabase = createClient()
-
     try {
-      // 現在の親ユーザーを取得
-      const {
-        data: { user: parentUser },
-      } = await supabase.auth.getUser()
-
-      if (!parentUser) {
-        setError('ログインが必要です')
-        setLoading(false)
-        return
-      }
-
-      // 子供用の別のSupabaseクライアントを作成（セッションを共有しない）
-      const childSupabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          auth: {
-            persistSession: false, // セッションを保存しない
-            autoRefreshToken: false,
-          },
-        }
-      )
-
-      // 子供アカウントを作成（別クライアントで）
-      const { data: childAuth, error: childAuthError } = await childSupabase.auth.signUp({
-        email,
-        password,
-      })
-
-      if (childAuthError) {
-        if (childAuthError.message.includes('already registered')) {
-          setError('このメールアドレスは既に登録されています')
-        } else {
-          setError(`登録に失敗しました: ${childAuthError.message}`)
-        }
-        setLoading(false)
-        return
-      }
-
-      if (childAuth.user) {
-        // 子供としてログインしてプロフィール作成（別クライアントで）
-        const { error: childSignInError } = await childSupabase.auth.signInWithPassword({
+      // API経由で子供アカウントを作成（サーバーサイドで処理）
+      const response = await fetch('/api/children', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName,
           email,
           password,
-        })
+        }),
+      })
 
-        if (childSignInError) {
-          console.error('Child sign in error:', childSignInError)
-          setError('子供のログインに失敗しました')
-          setLoading(false)
-          return
-        }
+      const data = await response.json()
 
-        // 子供のプロフィール作成（子供としてログイン中、別クライアント）
-        const { error: profileError } = await childSupabase.from('user_profiles').insert({
-          id: childAuth.user.id,
-          display_name: displayName,
-          role: 'child',
-          start_date: new Date().toISOString().split('T')[0],
-        })
-
-        if (profileError) {
-          console.error('Profile error:', profileError)
-        }
-
-        // 親子関係を登録（親のセッションを使用、メインクライアント）
-        const { error: relationError } = await supabase.from('family_relations').insert({
-          parent_id: parentUser.id,
-          child_id: childAuth.user.id,
-        })
-
-        if (relationError) {
-          console.error('Relation error:', relationError)
-          setError('親子関係の登録に失敗しました')
-          setLoading(false)
-          return
-        }
+      if (!response.ok) {
+        setError(data.error || '登録に失敗しました')
+        setLoading(false)
+        return
       }
 
       // フォームをリセット
