@@ -24,16 +24,25 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
     const supabase = createClient()
 
     try {
-      // 現在の親ユーザーを取得
+      // 現在の親ユーザーとセッションを取得
       const {
         data: { user: parentUser },
       } = await supabase.auth.getUser()
 
-      if (!parentUser) {
+      const {
+        data: { session: parentSession },
+      } = await supabase.auth.getSession()
+
+      if (!parentUser || !parentSession) {
         setError('ログインが必要です')
         setLoading(false)
         return
       }
+
+      // 親の認証情報を保存
+      const parentEmail = parentUser.email
+      const parentAccessToken = parentSession.access_token
+      const parentRefreshToken = parentSession.refresh_token
 
       // 子供アカウントを作成
       const { data: childAuth, error: childAuthError } = await supabase.auth.signUp({
@@ -52,19 +61,49 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
       }
 
       if (childAuth.user) {
-        // 子供のプロフィール作成
-        await supabase.from('user_profiles').insert({
+        // 子供としてログインしてプロフィール作成
+        const { error: childSignInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (childSignInError) {
+          console.error('Child sign in error:', childSignInError)
+          setError('子供のログインに失敗しました')
+          setLoading(false)
+          return
+        }
+
+        // 子供のプロフィール作成（子供としてログイン中）
+        const { error: profileError } = await supabase.from('user_profiles').insert({
           id: childAuth.user.id,
           display_name: displayName,
           role: 'child',
           start_date: new Date().toISOString().split('T')[0],
         })
 
-        // 親子関係を登録
-        await supabase.from('family_relations').insert({
+        if (profileError) {
+          console.error('Profile error:', profileError)
+        }
+
+        // 親のセッションに戻す
+        await supabase.auth.setSession({
+          access_token: parentAccessToken,
+          refresh_token: parentRefreshToken,
+        })
+
+        // 親子関係を登録（親としてログイン中）
+        const { error: relationError } = await supabase.from('family_relations').insert({
           parent_id: parentUser.id,
           child_id: childAuth.user.id,
         })
+
+        if (relationError) {
+          console.error('Relation error:', relationError)
+          setError('親子関係の登録に失敗しました')
+          setLoading(false)
+          return
+        }
       }
 
       // フォームをリセット
