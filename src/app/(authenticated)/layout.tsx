@@ -91,7 +91,7 @@ export default function AuthenticatedLayout({
       {/* メインコンテンツ */}
       <div className="md:ml-[280px]">
         <Header userName={userName} />
-        <main className="p-4 md:p-6 pb-20 md:pb-6">{children}</main>
+        <main className="p-4 pt-6 md:p-6 md:pt-8 pb-20 md:pb-6">{children}</main>
       </div>
 
       {/* モバイル: ボトムナビ */}
