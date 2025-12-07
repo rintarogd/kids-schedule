@@ -49,14 +49,18 @@ export default function SignupPage() {
     const childIds: string[] = []
 
     try {
-      // 1. 子供アカウントを先に作成
+      // 子供の情報をバリデーション
       for (const child of children) {
         if (!child.displayName || !child.email || !child.password) {
           setError('子どもの情報をすべて入力してください')
           setLoading(false)
           return
         }
+      }
 
+      // 1. 子供アカウントを作成（signUp + signIn + profile作成）
+      for (const child of children) {
+        // アカウント作成
         const { data: childAuth, error: childAuthError } = await supabase.auth.signUp({
           email: child.email,
           password: child.password,
@@ -75,13 +79,25 @@ export default function SignupPage() {
         if (childAuth.user) {
           childIds.push(childAuth.user.id)
 
-          // 子供のプロフィール作成
-          await supabase.from('user_profiles').insert({
+          // 子供としてログインしてプロフィール作成
+          await supabase.auth.signInWithPassword({
+            email: child.email,
+            password: child.password,
+          })
+
+          const { error: profileError } = await supabase.from('user_profiles').insert({
             id: childAuth.user.id,
             display_name: child.displayName,
             role: 'child',
             start_date: new Date().toISOString().split('T')[0],
           })
+
+          if (profileError) {
+            console.error('Child profile error:', profileError)
+          }
+
+          // ログアウト
+          await supabase.auth.signOut()
         }
       }
 
@@ -102,21 +118,25 @@ export default function SignupPage() {
       }
 
       if (parentAuth.user) {
+        // 3. 親アカウントでログイン
+        await supabase.auth.signInWithPassword({
+          email: parentEmail,
+          password: parentPassword,
+        })
+
         // 親のプロフィール作成
-        await supabase.from('user_profiles').insert({
+        const { error: parentProfileError } = await supabase.from('user_profiles').insert({
           id: parentAuth.user.id,
           display_name: parentName,
           role: 'parent',
           start_date: new Date().toISOString().split('T')[0],
         })
 
-        // 3. 親アカウントでログイン（RLSのため先にログインが必要）
-        await supabase.auth.signInWithPassword({
-          email: parentEmail,
-          password: parentPassword,
-        })
+        if (parentProfileError) {
+          console.error('Parent profile error:', parentProfileError)
+        }
 
-        // 4. 親子関係を登録（ログイン後なのでRLSが通る）
+        // 4. 親子関係を登録
         for (const childId of childIds) {
           const { error: relationError } = await supabase.from('family_relations').insert({
             parent_id: parentAuth.user.id,
