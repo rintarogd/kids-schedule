@@ -97,13 +97,13 @@ export default function SchedulePage() {
           return (
             <div
               key={day}
-              className={`bg-white rounded-lg border ${
+              className={`bg-white rounded-lg border overflow-hidden ${
                 isToday ? 'border-[#DC4C3E]' : 'border-[#E5E5E5]'
               }`}
             >
               {/* 曜日ヘッダー */}
               <div
-                className={`px-4 py-2 border-b ${
+                className={`px-4 py-2 border-b rounded-t-lg ${
                   isToday
                     ? 'bg-red-50 border-[#DC4C3E]'
                     : 'bg-[#FAFAFA] border-[#E5E5E5]'
