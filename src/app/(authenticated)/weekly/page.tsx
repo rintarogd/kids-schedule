@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { format, startOfWeek, addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
+import { useFamily } from '@/contexts/FamilyContext'
 import { WEEKDAYS } from '@/types'
 
 type DayStat = {
@@ -16,6 +17,7 @@ type DayStat = {
 export default function WeeklyPage() {
   const [stats, setStats] = useState<DayStat[]>([])
   const [loading, setLoading] = useState(true)
+  const { isParent, selectedChildId } = useFamily()
   const today = new Date()
   const weekStart = startOfWeek(today, { weekStartsOn: 1 })
 
@@ -29,20 +31,23 @@ export default function WeeklyPage() {
 
       if (!user) return
 
+      // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
+      const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
+
       const weekStartStr = format(weekStart, 'yyyy-MM-dd')
 
       // スケジュール取得
       const { data: tasks } = await supabase
         .from('scheduled_tasks')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .eq('week_start', weekStartStr)
 
       // 記録取得
       const { data: records } = await supabase
         .from('daily_records')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .gte('record_date', weekStartStr)
         .lte('record_date', format(addDays(weekStart, 6), 'yyyy-MM-dd'))
 
@@ -73,7 +78,7 @@ export default function WeeklyPage() {
     }
 
     fetchWeeklyStats()
-  }, [])
+  }, [selectedChildId, isParent])
 
   const totalPlanned = stats.reduce((sum, s) => sum + s.planned, 0)
   const totalActual = stats.reduce((sum, s) => sum + s.actual, 0)

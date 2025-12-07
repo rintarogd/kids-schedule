@@ -12,6 +12,7 @@ import {
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
+import { useFamily } from '@/contexts/FamilyContext'
 
 type DayData = {
   date: Date
@@ -21,6 +22,7 @@ type DayData = {
 export default function MonthlyPage() {
   const [dayData, setDayData] = useState<Map<string, number>>(new Map())
   const [loading, setLoading] = useState(true)
+  const { isParent, selectedChildId } = useFamily()
   const today = new Date()
   const monthStart = startOfMonth(today)
   const monthEnd = endOfMonth(today)
@@ -35,10 +37,13 @@ export default function MonthlyPage() {
 
       if (!user) return
 
+      // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
+      const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
+
       const { data: records } = await supabase
         .from('daily_records')
         .select('record_date, actual_minutes')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .gte('record_date', format(monthStart, 'yyyy-MM-dd'))
         .lte('record_date', format(monthEnd, 'yyyy-MM-dd'))
 
@@ -53,7 +58,7 @@ export default function MonthlyPage() {
     }
 
     fetchMonthlyData()
-  }, [])
+  }, [selectedChildId, isParent])
 
   // カレンダーの日付を生成（週の始まりから終わりまで）
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })

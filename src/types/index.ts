@@ -10,6 +10,20 @@ export type UserProfile = {
   updatedAt: string
 }
 
+// 親子関係
+export type FamilyRelation = {
+  id: string
+  parentId: string
+  childId: string
+  createdAt: string
+}
+
+// 子供情報（親が見る用）
+export type ChildInfo = {
+  id: string
+  displayName: string
+}
+
 // タスクカテゴリ
 export type TaskCategory = 'study' | 'lesson' | 'chore'
 

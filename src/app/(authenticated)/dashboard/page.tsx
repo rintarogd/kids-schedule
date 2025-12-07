@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
+import { useFamily } from '@/contexts/FamilyContext'
 import TodayAchievement from '@/components/TodayAchievement'
 import TaskRecorder from '@/components/TaskRecorder'
 import type { ScheduledTask, DailyRecord } from '@/types'
@@ -15,6 +16,7 @@ type TaskWithRecord = ScheduledTask & {
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<TaskWithRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const { isParent, selectedChildId } = useFamily()
   const today = new Date()
 
   const fetchTodayTasks = async () => {
@@ -25,6 +27,9 @@ export default function DashboardPage() {
     } = await supabase.auth.getUser()
 
     if (!user) return
+
+    // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
+    const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
 
     const todayStr = format(today, 'yyyy-MM-dd')
     const dayOfWeek = today.getDay()
@@ -39,7 +44,7 @@ export default function DashboardPage() {
     const { data: scheduledTasks } = await supabase
       .from('scheduled_tasks')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', targetUserId)
       .eq('week_start', weekStartStr)
       .eq('day_of_week', dayOfWeek)
 
@@ -47,7 +52,7 @@ export default function DashboardPage() {
     const { data: records } = await supabase
       .from('daily_records')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', targetUserId)
       .eq('record_date', todayStr)
 
     // タスクと記録を結合
@@ -90,7 +95,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchTodayTasks()
-  }, [])
+  }, [selectedChildId, isParent])
 
   // 達成時間を計算
   const totalAchievedMinutes = tasks.reduce((sum, task) => {

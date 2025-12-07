@@ -5,12 +5,14 @@ import { format, startOfWeek, addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useFamily } from '@/contexts/FamilyContext'
 import TaskItem from '@/components/TaskItem'
 import { WEEKDAYS, type ScheduledTask } from '@/types'
 
 export default function SchedulePage() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([])
   const [loading, setLoading] = useState(true)
+  const { isParent, selectedChildId } = useFamily()
   const today = new Date()
   const weekStart = startOfWeek(today, { weekStartsOn: 1 }) // 月曜始まり
 
@@ -24,12 +26,15 @@ export default function SchedulePage() {
 
       if (!user) return
 
+      // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
+      const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
+
       const weekStartStr = format(weekStart, 'yyyy-MM-dd')
 
       const { data } = await supabase
         .from('scheduled_tasks')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .eq('week_start', weekStartStr)
         .order('day_of_week')
 
@@ -55,7 +60,7 @@ export default function SchedulePage() {
     }
 
     fetchWeeklyTasks()
-  }, [])
+  }, [selectedChildId, isParent])
 
   // 曜日ごとにタスクをグループ化
   const tasksByDay = WEEKDAYS.map((_, index) => {

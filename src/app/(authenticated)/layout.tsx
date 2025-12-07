@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import Sidebar from '@/components/Sidebar'
 import BottomNav from '@/components/BottomNav'
 import Header from '@/components/Header'
+import { FamilyProvider } from '@/contexts/FamilyContext'
 import type { UserProfile } from '@/types'
 
 export default function AuthenticatedLayout({
@@ -82,20 +83,22 @@ export default function AuthenticatedLayout({
   const userName = profile?.displayName || 'ユーザー'
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      {/* PC: サイドバー */}
-      <div className="hidden md:block fixed left-0 top-0 h-screen">
-        <Sidebar userName={userName} onLogout={handleLogout} />
-      </div>
+    <FamilyProvider>
+      <div className="min-h-screen bg-[#FAFAFA]">
+        {/* PC: サイドバー */}
+        <div className="hidden md:block fixed left-0 top-0 h-screen">
+          <Sidebar userName={userName} onLogout={handleLogout} />
+        </div>
 
-      {/* メインコンテンツ */}
-      <div className="md:ml-[280px]">
-        <Header userName={userName} />
-        <main className="p-4 pt-6 md:p-6 md:pt-8 pb-20 md:pb-6">{children}</main>
-      </div>
+        {/* メインコンテンツ */}
+        <div className="md:ml-[280px]">
+          <Header userName={userName} />
+          <main className="p-4 pt-6 md:p-6 md:pt-8 pb-20 md:pb-6">{children}</main>
+        </div>
 
-      {/* モバイル: ボトムナビ */}
-      <BottomNav />
-    </div>
+        {/* モバイル: ボトムナビ */}
+        <BottomNav />
+      </div>
+    </FamilyProvider>
   )
 }
