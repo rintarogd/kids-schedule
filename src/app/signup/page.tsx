@@ -110,20 +110,23 @@ export default function SignupPage() {
           start_date: new Date().toISOString().split('T')[0],
         })
 
-        // 3. 親子関係を登録
+        // 3. 親アカウントでログイン（RLSのため先にログインが必要）
+        await supabase.auth.signInWithPassword({
+          email: parentEmail,
+          password: parentPassword,
+        })
+
+        // 4. 親子関係を登録（ログイン後なのでRLSが通る）
         for (const childId of childIds) {
-          await supabase.from('family_relations').insert({
+          const { error: relationError } = await supabase.from('family_relations').insert({
             parent_id: parentAuth.user.id,
             child_id: childId,
           })
+          if (relationError) {
+            console.error('Family relation error:', relationError)
+          }
         }
       }
-
-      // 親アカウントでログイン
-      await supabase.auth.signInWithPassword({
-        email: parentEmail,
-        password: parentPassword,
-      })
 
       router.push('/dashboard')
       router.refresh()
