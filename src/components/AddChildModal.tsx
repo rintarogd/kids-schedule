@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 
 type Props = {
   isOpen: boolean
@@ -21,31 +22,35 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
     setError(null)
     setLoading(true)
 
+    // メインのSupabaseクライアント（親のセッション）
     const supabase = createClient()
 
     try {
-      // 現在の親ユーザーとセッションを取得
+      // 現在の親ユーザーを取得
       const {
         data: { user: parentUser },
       } = await supabase.auth.getUser()
 
-      const {
-        data: { session: parentSession },
-      } = await supabase.auth.getSession()
-
-      if (!parentUser || !parentSession) {
+      if (!parentUser) {
         setError('ログインが必要です')
         setLoading(false)
         return
       }
 
-      // 親の認証情報を保存
-      const parentEmail = parentUser.email
-      const parentAccessToken = parentSession.access_token
-      const parentRefreshToken = parentSession.refresh_token
+      // 子供用の別のSupabaseクライアントを作成（セッションを共有しない）
+      const childSupabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            persistSession: false, // セッションを保存しない
+            autoRefreshToken: false,
+          },
+        }
+      )
 
-      // 子供アカウントを作成
-      const { data: childAuth, error: childAuthError } = await supabase.auth.signUp({
+      // 子供アカウントを作成（別クライアントで）
+      const { data: childAuth, error: childAuthError } = await childSupabase.auth.signUp({
         email,
         password,
       })
@@ -61,8 +66,8 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
       }
 
       if (childAuth.user) {
-        // 子供としてログインしてプロフィール作成
-        const { error: childSignInError } = await supabase.auth.signInWithPassword({
+        // 子供としてログインしてプロフィール作成（別クライアントで）
+        const { error: childSignInError } = await childSupabase.auth.signInWithPassword({
           email,
           password,
         })
@@ -74,8 +79,8 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
           return
         }
 
-        // 子供のプロフィール作成（子供としてログイン中）
-        const { error: profileError } = await supabase.from('user_profiles').insert({
+        // 子供のプロフィール作成（子供としてログイン中、別クライアント）
+        const { error: profileError } = await childSupabase.from('user_profiles').insert({
           id: childAuth.user.id,
           display_name: displayName,
           role: 'child',
@@ -86,13 +91,7 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
           console.error('Profile error:', profileError)
         }
 
-        // 親のセッションに戻す
-        await supabase.auth.setSession({
-          access_token: parentAccessToken,
-          refresh_token: parentRefreshToken,
-        })
-
-        // 親子関係を登録（親としてログイン中）
+        // 親子関係を登録（親のセッションを使用、メインクライアント）
         const { error: relationError } = await supabase.from('family_relations').insert({
           parent_id: parentUser.id,
           child_id: childAuth.user.id,
