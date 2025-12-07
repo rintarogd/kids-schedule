@@ -88,7 +88,7 @@ export default function SchedulePage() {
       </div>
 
       {/* 週間スケジュール */}
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-visible">
         {WEEKDAYS.map((day, index) => {
           const date = addDays(weekStart, index === 0 ? 6 : index - 1) // 月曜始まりに調整
           const dayTasks = tasksByDay[index]
