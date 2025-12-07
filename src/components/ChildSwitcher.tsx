@@ -10,11 +10,6 @@ export default function ChildSwitcher() {
   const [showAddChildModal, setShowAddChildModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // 親でない場合は何も表示しない
-  if (!isParent) {
-    return null
-  }
-
   const selectedChild = children.find((c) => c.id === selectedChildId)
 
   // 外側クリックで閉じる
@@ -28,6 +23,11 @@ export default function ChildSwitcher() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // 親でない場合は何も表示しない
+  if (!isParent) {
+    return null
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
