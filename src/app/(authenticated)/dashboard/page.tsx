@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import TodayAchievement from '@/components/TodayAchievement'
-import TaskItem from '@/components/TaskItem'
+import TaskRecorder from '@/components/TaskRecorder'
 import type { ScheduledTask, DailyRecord } from '@/types'
 
 type TaskWithRecord = ScheduledTask & {
@@ -17,43 +17,44 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const today = new Date()
 
-  useEffect(() => {
-    const fetchTodayTasks = async () => {
-      const supabase = createClient()
+  const fetchTodayTasks = async () => {
+    const supabase = createClient()
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      if (!user) return
+    if (!user) return
 
-      const todayStr = format(today, 'yyyy-MM-dd')
-      const dayOfWeek = today.getDay()
+    const todayStr = format(today, 'yyyy-MM-dd')
+    const dayOfWeek = today.getDay()
 
-      // 今週の月曜日を計算
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-      const weekStart = new Date(today)
-      weekStart.setDate(today.getDate() + mondayOffset)
-      const weekStartStr = format(weekStart, 'yyyy-MM-dd')
+    // 今週の月曜日を計算
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() + mondayOffset)
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd')
 
-      // 今日のスケジュールを取得
-      const { data: scheduledTasks } = await supabase
-        .from('scheduled_tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('week_start', weekStartStr)
-        .eq('day_of_week', dayOfWeek)
+    // 今日のスケジュールを取得
+    const { data: scheduledTasks } = await supabase
+      .from('scheduled_tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStartStr)
+      .eq('day_of_week', dayOfWeek)
 
-      // 今日の記録を取得
-      const { data: records } = await supabase
-        .from('daily_records')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('record_date', todayStr)
+    // 今日の記録を取得
+    const { data: records } = await supabase
+      .from('daily_records')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('record_date', todayStr)
 
-      // タスクと記録を結合
-      const tasksWithRecords: TaskWithRecord[] = (scheduledTasks || []).map(
-        (task) => ({
+    // タスクと記録を結合
+    const tasksWithRecords: TaskWithRecord[] = (scheduledTasks || []).map(
+      (task) => {
+        const record = records?.find((r) => r.scheduled_task_id === task.id)
+        return {
           id: task.id,
           userId: task.user_id,
           templateId: task.template_id,
@@ -65,40 +66,29 @@ export default function DashboardPage() {
           taskType: task.task_type,
           createdAt: task.created_at,
           updatedAt: task.updated_at,
-          record: records?.find((r) => r.scheduled_task_id === task.id)
+          record: record
             ? {
-                id: records.find((r) => r.scheduled_task_id === task.id)!.id,
-                userId: records.find((r) => r.scheduled_task_id === task.id)!
-                  .user_id,
-                scheduledTaskId: records.find(
-                  (r) => r.scheduled_task_id === task.id
-                )!.scheduled_task_id,
-                recordDate: records.find(
-                  (r) => r.scheduled_task_id === task.id
-                )!.record_date,
-                startTime: records.find((r) => r.scheduled_task_id === task.id)!
-                  .start_time,
-                endTime: records.find((r) => r.scheduled_task_id === task.id)!
-                  .end_time,
-                actualMinutes: records.find(
-                  (r) => r.scheduled_task_id === task.id
-                )!.actual_minutes,
-                isCompleted: records.find(
-                  (r) => r.scheduled_task_id === task.id
-                )!.is_completed,
-                createdAt: records.find((r) => r.scheduled_task_id === task.id)!
-                  .created_at,
-                updatedAt: records.find((r) => r.scheduled_task_id === task.id)!
-                  .updated_at,
+                id: record.id,
+                userId: record.user_id,
+                scheduledTaskId: record.scheduled_task_id,
+                recordDate: record.record_date,
+                startTime: record.start_time,
+                endTime: record.end_time,
+                actualMinutes: record.actual_minutes,
+                isCompleted: record.is_completed,
+                createdAt: record.created_at,
+                updatedAt: record.updated_at,
               }
             : undefined,
-        })
-      )
+        }
+      }
+    )
 
-      setTasks(tasksWithRecords)
-      setLoading(false)
-    }
+    setTasks(tasksWithRecords)
+    setLoading(false)
+  }
 
+  useEffect(() => {
     fetchTodayTasks()
   }, [])
 
@@ -155,13 +145,13 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-[#E5E5E5] divide-y divide-[#E5E5E5]">
+          <div className="space-y-4">
             {tasks.map((task) => (
-              <TaskItem
+              <TaskRecorder
                 key={task.id}
                 task={task}
                 record={task.record}
-                showTime
+                onUpdate={fetchTodayTasks}
               />
             ))}
           </div>
