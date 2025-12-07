@@ -75,7 +75,7 @@ export default function SchedulePage() {
   return (
     <div className="max-w-2xl mx-auto">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 mt-2">
         <h2 className="text-lg font-medium text-[#202020]">
           {format(weekStart, 'M月d日', { locale: ja })} 〜 の週
         </h2>
