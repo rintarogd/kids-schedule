@@ -10,6 +10,7 @@ type FamilyContextType = {
   selectedChildId: string | null
   setSelectedChildId: (id: string | null) => void
   loading: boolean
+  refreshFamily: () => Promise<void>
 }
 
 const FamilyContext = createContext<FamilyContextType | undefined>(undefined)
@@ -20,62 +21,62 @@ export function FamilyProvider({ children: reactChildren }: { children: ReactNod
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchFamilyData = async () => {
-      const supabase = createClient()
+  const fetchFamilyData = async () => {
+    const supabase = createClient()
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      if (!user) {
-        setLoading(false)
-        return
-      }
+    if (!user) {
+      setLoading(false)
+      return
+    }
 
-      // ユーザーのプロフィールを取得
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+    // ユーザーのプロフィールを取得
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-      if (profile?.role === 'parent') {
-        setIsParent(true)
+    if (profile?.role === 'parent') {
+      setIsParent(true)
 
-        // 子供の一覧を取得
-        const { data: relations } = await supabase
-          .from('family_relations')
-          .select('child_id')
-          .eq('parent_id', user.id)
+      // 子供の一覧を取得
+      const { data: relations } = await supabase
+        .from('family_relations')
+        .select('child_id')
+        .eq('parent_id', user.id)
 
-        if (relations && relations.length > 0) {
-          const childIds = relations.map((r) => r.child_id)
+      if (relations && relations.length > 0) {
+        const childIds = relations.map((r) => r.child_id)
 
-          // 子供のプロフィールを取得
-          const { data: childProfiles } = await supabase
-            .from('user_profiles')
-            .select('id, display_name')
-            .in('id', childIds)
+        // 子供のプロフィールを取得
+        const { data: childProfiles } = await supabase
+          .from('user_profiles')
+          .select('id, display_name')
+          .in('id', childIds)
 
-          if (childProfiles) {
-            const children: ChildInfo[] = childProfiles.map((p) => ({
-              id: p.id,
-              displayName: p.display_name,
-            }))
-            setChildrenList(children)
+        if (childProfiles) {
+          const children: ChildInfo[] = childProfiles.map((p) => ({
+            id: p.id,
+            displayName: p.display_name,
+          }))
+          setChildrenList(children)
 
-            // 最初の子供を選択
-            if (children.length > 0 && !selectedChildId) {
-              setSelectedChildId(children[0].id)
-            }
+          // 最初の子供を選択（まだ選択されていない場合）
+          if (children.length > 0 && !selectedChildId) {
+            setSelectedChildId(children[0].id)
           }
         }
       }
-
-      setLoading(false)
     }
 
+    setLoading(false)
+  }
+
+  useEffect(() => {
     fetchFamilyData()
   }, [])
 
@@ -87,6 +88,7 @@ export function FamilyProvider({ children: reactChildren }: { children: ReactNod
         selectedChildId,
         setSelectedChildId,
         loading,
+        refreshFamily: fetchFamilyData,
       }}
     >
       {reactChildren}
