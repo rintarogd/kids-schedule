@@ -12,6 +12,8 @@ export default function ChildSwitcher() {
 
   const selectedChild = children.find((c) => c.id === selectedChildId)
 
+  console.log('ChildSwitcher: isParent:', isParent, 'children:', children, 'selectedChildId:', selectedChildId)
+
   // 外側クリックで閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
