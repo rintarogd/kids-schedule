@@ -39,7 +39,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* ロゴ */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#202020]">Kids Schedule</h1>
+          <h1 className="text-2xl font-bold text-[#202020]">じかんバンク</h1>
           <p className="text-[#666666] mt-2">勉強と習い事の記録アプリ</p>
         </div>
 

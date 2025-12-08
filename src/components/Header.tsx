@@ -16,7 +16,7 @@ export default function Header({ userName }: HeaderProps) {
     <header className="h-14 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 md:px-6">
       {/* モバイル: ロゴ */}
       <div className="md:hidden">
-        <h1 className="text-lg font-bold text-[#202020]">Kids Schedule</h1>
+        <h1 className="text-lg font-bold text-[#202020]">じかんバンク</h1>
       </div>
 
       {/* PC: 日付 */}

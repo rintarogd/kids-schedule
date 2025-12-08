@@ -22,7 +22,7 @@ export default function Sidebar({ userName, onLogout }: SidebarProps) {
     <aside className="w-[280px] h-screen bg-[#FAFAFA] border-r border-[#E5E5E5] flex flex-col">
       {/* ロゴ */}
       <div className="p-4 border-b border-[#E5E5E5]">
-        <h1 className="text-lg font-bold text-[#202020]">Kids Schedule</h1>
+        <h1 className="text-lg font-bold text-[#202020]">じかんバンク</h1>
       </div>
 
       {/* ナビゲーション */}
