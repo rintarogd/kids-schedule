@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { format } from 'date-fns'
+import { useSearchParams } from 'next/navigation'
+import { format, addDays, subDays, startOfWeek } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
@@ -14,12 +15,33 @@ type TaskWithRecords = ScheduledTask & {
 }
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams()
+  const dateParam = searchParams.get('date')
+
   const [tasks, setTasks] = useState<TaskWithRecords[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (dateParam) {
+      const parsed = new Date(dateParam)
+      if (!isNaN(parsed.getTime())) return parsed
+    }
+    return new Date()
+  })
   const { isParent, selectedChildId } = useFamily()
   const today = new Date()
 
-  const fetchTodayTasks = async () => {
+  // URL パラメータが変わったら日付を更新
+  useEffect(() => {
+    if (dateParam) {
+      const parsed = new Date(dateParam)
+      if (!isNaN(parsed.getTime())) {
+        setSelectedDate(parsed)
+      }
+    }
+  }, [dateParam])
+
+  const fetchTasks = async (targetDate: Date) => {
+    setLoading(true)
     const supabase = createClient()
 
     const {
@@ -31,16 +53,14 @@ export default function DashboardPage() {
     // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
     const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
 
-    const todayStr = format(today, 'yyyy-MM-dd')
-    const dayOfWeek = today.getDay()
+    const dateStr = format(targetDate, 'yyyy-MM-dd')
+    const dayOfWeek = targetDate.getDay()
 
-    // 今週の月曜日を計算
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-    const weekStart = new Date(today)
-    weekStart.setDate(today.getDate() + mondayOffset)
+    // その日の週の月曜日を計算
+    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 })
     const weekStartStr = format(weekStart, 'yyyy-MM-dd')
 
-    // 今日のスケジュールを取得
+    // 選択日のスケジュールを取得
     const { data: scheduledTasks } = await supabase
       .from('scheduled_tasks')
       .select('*')
@@ -48,12 +68,12 @@ export default function DashboardPage() {
       .eq('week_start', weekStartStr)
       .eq('day_of_week', dayOfWeek)
 
-    // 今日の記録を取得
+    // 選択日の記録を取得
     const { data: records } = await supabase
       .from('daily_records')
       .select('*')
       .eq('user_id', targetUserId)
-      .eq('record_date', todayStr)
+      .eq('record_date', dateStr)
 
     // タスクと記録を結合（複数セッション対応）
     const tasksWithRecords: TaskWithRecords[] = (scheduledTasks || []).map(
@@ -96,8 +116,13 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchTodayTasks()
-  }, [selectedChildId, isParent])
+    fetchTasks(selectedDate)
+  }, [selectedChildId, isParent, selectedDate])
+
+  const goToPrevDay = () => setSelectedDate((prev) => subDays(prev, 1))
+  const goToNextDay = () => setSelectedDate((prev) => addDays(prev, 1))
+
+  const isToday = format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
 
   // 達成時間を計算（複数セッション対応）
   const getTaskTotalMinutes = (task: TaskWithRecords) => {
@@ -131,11 +156,26 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* 日付 */}
-      <div className="md:hidden mb-4">
+      {/* 日付ナビゲーション */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={goToPrevDay}
+          className="px-3 py-1 text-sm text-[#666666] hover:bg-[#F5F5F5] rounded"
+        >
+          ← 前へ
+        </button>
         <h2 className="text-lg font-medium text-[#202020]">
-          {format(today, 'M月d日（E）', { locale: ja })}
+          {format(selectedDate, 'M/d', { locale: ja })}のやること
+          {isToday && <span className="ml-2 text-sm text-[#DC4C3E]">（今日）</span>}
         </h2>
+        <button
+          type="button"
+          onClick={goToNextDay}
+          className="px-3 py-1 text-sm text-[#666666] hover:bg-[#F5F5F5] rounded"
+        >
+          次へ →
+        </button>
       </div>
 
       {/* 達成時間表示 */}
@@ -162,7 +202,7 @@ export default function DashboardPage() {
                 key={task.id}
                 task={task}
                 records={task.records}
-                onUpdate={fetchTodayTasks}
+                onUpdate={() => fetchTasks(selectedDate)}
               />
             ))}
           </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
@@ -12,8 +12,17 @@ import { getWeekdayColorClass } from '@/lib/weekendColors'
 
 export default function ScheduleEditPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const dayParam = searchParams.get('day')
+
   const [tasks, setTasks] = useState<ScheduledTask[]>([])
-  const [selectedDayMondayIndex, setSelectedDayMondayIndex] = useState<number>(0) // 月曜=0
+  const [selectedDayMondayIndex, setSelectedDayMondayIndex] = useState<number>(() => {
+    if (dayParam) {
+      const parsed = parseInt(dayParam, 10)
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 6) return parsed
+    }
+    return 0
+  })
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() =>
@@ -21,6 +30,16 @@ export default function ScheduleEditPage() {
   )
   const { isParent, selectedChildId } = useFamily()
   const today = new Date()
+
+  // URL パラメータが変わったら日付を更新
+  useEffect(() => {
+    if (dayParam) {
+      const parsed = parseInt(dayParam, 10)
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 6) {
+        setSelectedDayMondayIndex(parsed)
+      }
+    }
+  }, [dayParam])
 
   const fetchTasks = async () => {
     const supabase = createClient()

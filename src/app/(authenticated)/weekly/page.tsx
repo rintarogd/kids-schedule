@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
 import { WEEKDAYS_MONDAY_START } from '@/types'
@@ -222,6 +223,12 @@ export default function WeeklyPage() {
                   <div className="text-[#666666]">{stat.planned}分</div>
                   <div className="text-[#DC4C3E]">{stat.actual}分</div>
                 </div>
+                <Link
+                  href={`/dashboard?date=${stat.date}`}
+                  className="text-xs text-[#999999] hover:text-[#DC4C3E] transition-colors whitespace-nowrap"
+                >
+                  修正
+                </Link>
               </div>
             )
           })}

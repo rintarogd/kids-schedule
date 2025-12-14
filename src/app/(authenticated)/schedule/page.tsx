@@ -107,14 +107,6 @@ export default function SchedulePage() {
           次へ →
         </button>
       </div>
-      <div className="flex justify-end mb-4">
-        <Link
-          href="/schedule/edit"
-          className="px-4 py-2 bg-[#DC4C3E] text-white text-sm rounded-md hover:bg-[#B03D32] transition-colors"
-        >
-          編集する
-        </Link>
-      </div>
 
       {/* 週間スケジュール */}
       <div className="space-y-4 overflow-visible">
@@ -132,22 +124,30 @@ export default function SchedulePage() {
             >
               {/* 曜日ヘッダー */}
               <div
-                className={`px-4 py-2 border-b rounded-t-lg ${
+                className={`px-4 py-2 border-b rounded-t-lg flex items-center justify-between ${
                   isToday
                     ? 'bg-red-50 border-[#DC4C3E]'
                     : 'bg-[#FAFAFA] border-[#E5E5E5]'
                 }`}
               >
-                <span
-                  className={`text-sm font-medium ${
-                    isToday ? 'text-[#DC4C3E]' : getWeekdayColorClass(mondayIndex) || 'text-[#202020]'
-                  }`}
+                <div>
+                  <span
+                    className={`text-sm font-medium ${
+                      isToday ? 'text-[#DC4C3E]' : getWeekdayColorClass(mondayIndex) || 'text-[#202020]'
+                    }`}
+                  >
+                    {day}曜日
+                  </span>
+                  <span className="text-sm text-[#666666] ml-2">
+                    {format(date, 'M/d')}
+                  </span>
+                </div>
+                <Link
+                  href={`/schedule/edit?day=${mondayIndex}`}
+                  className="text-xs text-[#666666] hover:text-[#DC4C3E] transition-colors"
                 >
-                  {day}曜日
-                </span>
-                <span className="text-sm text-[#666666] ml-2">
-                  {format(date, 'M/d')}
-                </span>
+                  編集
+                </Link>
               </div>
 
               {/* タスク一覧 */}
