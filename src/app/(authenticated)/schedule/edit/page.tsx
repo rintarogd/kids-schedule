@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
 import TaskForm from '@/components/TaskForm'
@@ -282,7 +283,7 @@ export default function ScheduleEditPage() {
                     className="flex items-center gap-1 text-sm text-[#DC4C3E] hover:text-[#B03D32] transition-colors"
                     aria-label="やることを削除"
                   >
-                    <span>✗</span>
+                    <X className="w-4 h-4" />
                     <span>削除する</span>
                   </button>
                 </div>

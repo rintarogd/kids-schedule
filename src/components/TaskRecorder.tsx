@@ -283,7 +283,7 @@ export default function TaskRecorder({
                     className="flex items-center gap-1 text-xs text-[#DC4C3E] hover:text-[#B03D32]"
                     aria-label="削除する"
                   >
-                    <span>✗</span>
+                    <X className="w-3.5 h-3.5" />
                     <span>削除する</span>
                   </button>
                 </>
@@ -314,7 +314,7 @@ export default function TaskRecorder({
                 className="flex items-center gap-1 text-xs text-[#DC4C3E] hover:text-[#B03D32]"
                 aria-label="削除する"
               >
-                <span>✗</span>
+                <X className="w-3.5 h-3.5" />
                 <span>削除する</span>
               </button>
             </div>
