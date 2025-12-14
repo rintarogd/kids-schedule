@@ -153,7 +153,7 @@ export default function SchedulePage() {
               {/* タスク一覧 */}
               {dayTasks.length === 0 ? (
                 <div className="px-4 py-6 text-center text-[#999999] text-sm">
-                  タスクなし
+                  やることの登録なし
                 </div>
               ) : (
                 <div className="divide-y divide-[#E5E5E5]">

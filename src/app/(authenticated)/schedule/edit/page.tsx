@@ -110,7 +110,7 @@ export default function ScheduleEditPage() {
     if (!response.ok) {
       const error = await response.json()
       console.error('タスク追加エラー:', error)
-      alert(`タスク追加に失敗しました: ${error.error}`)
+      alert(`やることの追加に失敗しました: ${error.error}`)
       return
     }
 
@@ -126,7 +126,7 @@ export default function ScheduleEditPage() {
     if (!response.ok) {
       const error = await response.json()
       console.error('タスク削除エラー:', error)
-      alert(`タスク削除に失敗しました: ${error.error}`)
+      alert(`やることの削除に失敗しました: ${error.error}`)
       return
     }
 
@@ -224,7 +224,7 @@ export default function ScheduleEditPage() {
       <div className="bg-white rounded-lg border border-[#E5E5E5]">
         {dayTasks.length === 0 ? (
           <div className="p-8 text-center text-[#999999]">
-            タスクがありません
+            やることがありません
           </div>
         ) : (
           <div className="divide-y divide-[#E5E5E5]">
@@ -258,7 +258,7 @@ export default function ScheduleEditPage() {
                     type="button"
                     onClick={() => handleDeleteTask(task.id)}
                     className="text-[#999999] hover:text-[#DC4C3E] transition-colors"
-                    aria-label="タスクを削除"
+                    aria-label="やることを削除"
                   >
                     <svg
                       className="w-5 h-5"
@@ -294,7 +294,7 @@ export default function ScheduleEditPage() {
             onClick={() => setShowForm(true)}
             className="w-full p-4 text-left text-sm text-[#666666] hover:text-[#DC4C3E] hover:bg-[#F5F5F5] transition-colors border-t border-[#E5E5E5]"
           >
-            ＋ タスクを追加
+            ＋ やることを追加
           </button>
         )}
       </div>

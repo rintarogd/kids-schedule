@@ -146,13 +146,13 @@ export default function DashboardPage() {
 
       {/* 今日のタスク */}
       <div className="mt-6">
-        <h3 className="text-sm font-medium text-[#666666] mb-3">今日のタスク</h3>
+        <h3 className="text-sm font-medium text-[#666666] mb-3">今日やること</h3>
 
         {tasks.length === 0 ? (
           <div className="bg-white rounded-lg border border-[#E5E5E5] p-8 text-center">
-            <p className="text-[#666666]">今日のタスクはありません</p>
+            <p className="text-[#666666]">今日やることはありません</p>
             <p className="text-sm text-[#999999] mt-2">
-              スケジュールでタスクを追加してください
+              スケジュールでやることを追加してください
             </p>
           </div>
         ) : (
