@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Clock } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -39,7 +40,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* ロゴ */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#202020]">じかんバンク</h1>
+          <h1 className="flex items-center justify-center gap-2 text-2xl font-bold text-[#202020]">
+            <Clock className="w-7 h-7" />
+            じかんバンク
+          </h1>
           <p className="text-[#666666] mt-2">勉強と習い事の記録アプリ</p>
         </div>
 
@@ -113,6 +117,17 @@ export default function LoginPage() {
               新規登録
             </Link>
           </div>
+        </div>
+
+        {/* 更新履歴 */}
+        <div className="mt-6 text-center text-xs text-[#999999]">
+          <p className="mb-2">あたらしくなったところ（2024/12/14）</p>
+          <ul className="text-[#666666] space-y-1">
+            <li>🎨 ボタンやメニューにわかりやすいアイコンがついたよ</li>
+            <li>🔵 土曜日は青い文字、🔴 日曜日は赤い文字になったよ</li>
+            <li>✏️ 「その他」をえらんだときに、なにをやるか書けるようになったよ</li>
+            <li>⏱️ 記録した時間をあとから修正できるようになったよ</li>
+          </ul>
         </div>
       </div>
     </div>
