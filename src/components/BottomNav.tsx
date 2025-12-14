@@ -11,7 +11,7 @@ type NavItem = {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: '今日', icon: LayoutDashboard },
+  { href: '/dashboard', label: '今日やること', icon: LayoutDashboard },
   { href: '/schedule', label: '予定', icon: Calendar },
   { href: '/weekly', label: '週間', icon: BarChart2 },
   { href: '/monthly', label: '月間', icon: TrendingUp },
