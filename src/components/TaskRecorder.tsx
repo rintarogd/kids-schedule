@@ -113,9 +113,25 @@ export default function TaskRecorder({
     setLoading(true)
     const supabase = createClient()
 
+    // 編集中のセッションを取得
+    const editingSession = records.find((r) => r.id === editingId)
+
+    // 開始時間から新しい終了時間を計算
+    let newEndTime: string | undefined
+    if (editingSession?.startTime) {
+      const [startH, startM] = editingSession.startTime.split(':').map(Number)
+      const totalMinutesFromStart = startH * 60 + startM + editMinutes
+      const newEndH = Math.floor(totalMinutesFromStart / 60) % 24
+      const newEndM = totalMinutesFromStart % 60
+      newEndTime = `${String(newEndH).padStart(2, '0')}:${String(newEndM).padStart(2, '0')}:00`
+    }
+
     await supabase
       .from('daily_records')
-      .update({ actual_minutes: editMinutes })
+      .update({
+        actual_minutes: editMinutes,
+        end_time: newEndTime || editingSession?.endTime,
+      })
       .eq('id', editingId)
 
     setEditingId(null)
