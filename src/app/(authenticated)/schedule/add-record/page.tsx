@@ -26,6 +26,7 @@ export default function AddRecordPage() {
   const [actualMinutes, setActualMinutes] = useState(30)
   const [customText, setCustomText] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showErrors, setShowErrors] = useState(false)
 
   const categoryConfig = CATEGORY_CONFIG[category]
   const subcategories = categoryConfig.subcategories
@@ -51,9 +52,23 @@ export default function AddRecordPage() {
 
   const isOtherSelected = subcategory === 'その他'
 
+  // バリデーションエラーメッセージを取得
+  const getValidationErrors = (): string[] => {
+    const errors: string[] = []
+    if (!subcategory) {
+      const label = category === 'study' ? '教科' : category === 'lesson' ? '習い事' : 'お手伝い'
+      errors.push(`${label}が選択されていません`)
+    }
+    return errors
+  }
+
+  const validationErrors = getValidationErrors()
+  const isValid = validationErrors.length === 0
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!subcategory) return
+    setShowErrors(true)
+    if (!isValid) return
 
     setLoading(true)
     const supabase = createClient()
@@ -303,11 +318,20 @@ export default function AddRecordPage() {
             </div>
           </div>
 
+          {/* エラーメッセージ */}
+          {showErrors && validationErrors.length > 0 && (
+            <div className="text-sm text-[#DC4C3E]">
+              {validationErrors.map((error, i) => (
+                <p key={i}>※ {error}</p>
+              ))}
+            </div>
+          )}
+
           {/* ボタン */}
           <div className="flex gap-2 pt-4">
             <button
               type="submit"
-              disabled={!subcategory || loading}
+              disabled={loading}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#DC4C3E] text-white rounded-md hover:bg-[#B03D32] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />

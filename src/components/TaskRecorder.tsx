@@ -178,6 +178,18 @@ export default function TaskRecorder({
   // 時間なしの実績（過去入力分）
   const recordsWithoutTime = records.filter((r) => r.actualMinutes && !r.startTime)
 
+  // レコード削除
+  const handleDeleteRecord = async (recordId: string, minutes: number) => {
+    const confirmed = window.confirm(`この実績（${minutes}分）を削除しますか？\nこの操作は元に戻せません。`)
+    if (!confirmed) return
+
+    setLoading(true)
+    const supabase = createClient()
+    await supabase.from('daily_records').delete().eq('id', recordId)
+    setLoading(false)
+    onUpdate()
+  }
+
   return (
     <div className="bg-white rounded-lg border border-[#E5E5E5] p-4">
       {/* タスク情報 */}
@@ -247,23 +259,33 @@ export default function TaskRecorder({
                 </div>
               ) : (
                 <>
-                  <span className="text-[#666666]">
-                    {session.startTime?.slice(0, 5)}〜{session.endTime?.slice(0, 5)}
-                  </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-[#666666]">
+                      {session.startTime?.slice(0, 5)}〜{session.endTime?.slice(0, 5)}
+                    </span>
                     <span className="text-[#058527] font-medium">
                       {session.actualMinutes}分
                     </span>
                     <button
                       type="button"
                       onClick={() => handleEditStart(session)}
-                      className="flex items-center gap-1 text-xs text-[#999999] hover:text-[#666666]"
-                      aria-label="修正"
+                      className="flex items-center gap-1 text-xs text-[#666666] hover:text-[#202020]"
+                      aria-label="修正する"
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                      修正
+                      修正する
                     </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRecord(session.id, session.actualMinutes || 0)}
+                    disabled={loading}
+                    className="flex items-center gap-1 text-xs text-[#DC4C3E] hover:text-[#B03D32]"
+                    aria-label="削除する"
+                  >
+                    <span>✗</span>
+                    <span>削除する</span>
+                  </button>
                 </>
               )}
             </div>
@@ -279,10 +301,22 @@ export default function TaskRecorder({
               key={record.id}
               className="flex items-center justify-between text-sm bg-[#F5F5F5] rounded px-3 py-2"
             >
-              <span className="text-[#666666]">手動入力</span>
-              <span className="text-[#058527] font-medium">
-                {record.actualMinutes}分
-              </span>
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-[#666666]">手動入力</span>
+                <span className="text-[#058527] font-medium">
+                  {record.actualMinutes}分
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteRecord(record.id, record.actualMinutes || 0)}
+                disabled={loading}
+                className="flex items-center gap-1 text-xs text-[#DC4C3E] hover:text-[#B03D32]"
+                aria-label="削除する"
+              >
+                <span>✗</span>
+                <span>削除する</span>
+              </button>
             </div>
           ))}
         </div>

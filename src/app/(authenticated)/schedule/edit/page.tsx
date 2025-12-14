@@ -137,7 +137,10 @@ export default function ScheduleEditPage() {
     fetchTasks()
   }
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async (taskId: string, taskName: string) => {
+    const confirmed = window.confirm(`「${taskName}」を削除しますか？\nこの操作は元に戻せません。`)
+    if (!confirmed) return
+
     const response = await fetch(`/api/scheduled-tasks?id=${taskId}`, {
       method: 'DELETE',
     })
@@ -275,23 +278,12 @@ export default function ScheduleEditPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="text-[#999999] hover:text-[#DC4C3E] transition-colors"
+                    onClick={() => handleDeleteTask(task.id, task.subcategory)}
+                    className="flex items-center gap-1 text-sm text-[#DC4C3E] hover:text-[#B03D32] transition-colors"
                     aria-label="やることを削除"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
+                    <span>✗</span>
+                    <span>削除する</span>
                   </button>
                 </div>
               )
