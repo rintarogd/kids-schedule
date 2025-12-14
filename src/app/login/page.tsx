@@ -127,7 +127,13 @@ export default function LoginPage() {
             <li>🔵 土曜日は青い文字、🔴 日曜日は赤い文字になったよ</li>
             <li>✏️ 「その他」をえらんだときに、なにをやるか書けるようになったよ</li>
             <li>⏱️ 記録した時間をあとから修正できるようになったよ</li>
+            <li>➕ 予定になかったこともあとから記録できるようになったよ</li>
           </ul>
+        </div>
+
+        {/* バージョン */}
+        <div className="mt-4 text-center text-xs text-[#CCCCCC]">
+          ver 1.1.0
         </div>
       </div>
     </div>
