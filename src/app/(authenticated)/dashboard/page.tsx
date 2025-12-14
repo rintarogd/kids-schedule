@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { format, addDays, subDays, startOfWeek } from 'date-fns'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
@@ -202,11 +204,21 @@ export default function DashboardPage() {
                 key={task.id}
                 task={task}
                 records={task.records}
+                selectedDate={selectedDate}
                 onUpdate={() => fetchTasks(selectedDate)}
               />
             ))}
           </div>
         )}
+
+        {/* スケジュールにない実績を追加するボタン */}
+        <Link
+          href={`/schedule/add-record?date=${format(selectedDate, 'yyyy-MM-dd')}`}
+          className="mt-4 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#E5E5E5] text-[#666666] rounded-lg hover:border-[#DC4C3E] hover:text-[#DC4C3E] transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          スケジュールにない実績を追加する
+        </Link>
       </div>
     </div>
   )

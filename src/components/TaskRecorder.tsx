@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
-import { Play, Square, RotateCcw, Check, Pencil, Save, X, Clock } from 'lucide-react'
+import { Play, Square, RotateCcw, Check, Pencil, Save, X, Clock, Plus } from 'lucide-react'
 import {
   CATEGORY_CONFIG,
   type ScheduledTask,
@@ -14,19 +14,27 @@ import {
 type TaskRecorderProps = {
   task: ScheduledTask
   records: DailyRecord[] // 複数の記録に対応
+  selectedDate: Date // 選択中の日付
   onUpdate: () => void
 }
 
 export default function TaskRecorder({
   task,
   records,
+  selectedDate,
   onUpdate,
 }: TaskRecorderProps) {
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMinutes, setEditMinutes] = useState<number>(0)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addMinutes, setAddMinutes] = useState<number>(task.plannedMinutes)
   const categoryConfig = CATEGORY_CONFIG[task.category as TaskCategory]
   const color = categoryConfig?.color || '#666666'
+
+  // 今日かどうかを判定
+  const today = new Date()
+  const isToday = format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
 
   // タスク種別のラベル取得
   const getTaskTypeLabel = () => {
@@ -143,6 +151,33 @@ export default function TaskRecorder({
     setEditingId(null)
   }
 
+  // 過去日付用: 実績を追加
+  const handleAddRecord = async () => {
+    if (addMinutes <= 0) return
+
+    setLoading(true)
+    const supabase = createClient()
+    const dateStr = format(selectedDate, 'yyyy-MM-dd')
+
+    await supabase.from('daily_records').insert({
+      user_id: task.userId,
+      scheduled_task_id: task.id,
+      record_date: dateStr,
+      start_time: null,
+      end_time: null,
+      actual_minutes: addMinutes,
+      is_completed: true,
+    })
+
+    setShowAddForm(false)
+    setAddMinutes(task.plannedMinutes)
+    setLoading(false)
+    onUpdate()
+  }
+
+  // 時間なしの実績（過去入力分）
+  const recordsWithoutTime = records.filter((r) => r.actualMinutes && !r.startTime)
+
   return (
     <div className="bg-white rounded-lg border border-[#E5E5E5] p-4">
       {/* タスク情報 */}
@@ -168,7 +203,7 @@ export default function TaskRecorder({
         )}
       </div>
 
-      {/* 完了したセッション一覧 */}
+      {/* 完了したセッション一覧（時間付き） */}
       {completedSessions.length > 0 && (
         <div className="mb-4 space-y-2">
           {completedSessions.map((session) => (
@@ -236,37 +271,99 @@ export default function TaskRecorder({
         </div>
       )}
 
+      {/* 時間なしの実績一覧（過去入力分） */}
+      {recordsWithoutTime.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {recordsWithoutTime.map((record) => (
+            <div
+              key={record.id}
+              className="flex items-center justify-between text-sm bg-[#F5F5F5] rounded px-3 py-2"
+            >
+              <span className="text-[#666666]">手動入力</span>
+              <span className="text-[#058527] font-medium">
+                {record.actualMinutes}分
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* アクションボタン */}
-      {activeSession ? (
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-sm text-[#666666]">
-            <Clock className="w-4 h-4" />
-            {activeSession.startTime?.slice(0, 5)} から開始中
-          </span>
+      {isToday ? (
+        // 今日の場合: リアルタイム記録
+        activeSession ? (
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-sm text-[#666666]">
+              <Clock className="w-4 h-4" />
+              {activeSession.startTime?.slice(0, 5)} から開始中
+            </span>
+            <button
+              type="button"
+              onClick={handleEnd}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#058527] text-white text-sm rounded-md hover:bg-[#046a1f] transition-colors disabled:opacity-50"
+            >
+              <Square className="w-4 h-4" />
+              {loading ? '処理中...' : '終了する'}
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={handleEnd}
+            onClick={handleStart}
             disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#058527] text-white text-sm rounded-md hover:bg-[#046a1f] transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#E5E5E5] text-[#666666] rounded-md hover:border-[#DC4C3E] hover:text-[#DC4C3E] transition-colors disabled:opacity-50"
           >
-            <Square className="w-4 h-4" />
-            {loading ? '処理中...' : '終了する'}
+            {completedSessions.length > 0 ? (
+              <RotateCcw className="w-4 h-4" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            {loading ? '処理中...' : completedSessions.length > 0 ? '再開する' : '開始する'}
           </button>
-        </div>
+        )
       ) : (
-        <button
-          type="button"
-          onClick={handleStart}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#E5E5E5] text-[#666666] rounded-md hover:border-[#DC4C3E] hover:text-[#DC4C3E] transition-colors disabled:opacity-50"
-        >
-          {completedSessions.length > 0 ? (
-            <RotateCcw className="w-4 h-4" />
-          ) : (
-            <Play className="w-4 h-4" />
-          )}
-          {loading ? '処理中...' : completedSessions.length > 0 ? '再開する' : '開始する'}
-        </button>
+        // 過去日付の場合: 実績を追加
+        showAddForm ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-[#666666]">実績:</span>
+            <input
+              type="number"
+              value={addMinutes}
+              onChange={(e) => setAddMinutes(Number(e.target.value))}
+              className="w-20 px-2 py-1.5 border border-[#E5E5E5] rounded text-center text-sm"
+              min={1}
+              aria-label="実績時間"
+            />
+            <span className="text-sm text-[#666666]">分</span>
+            <button
+              type="button"
+              onClick={handleAddRecord}
+              disabled={loading || addMinutes <= 0}
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#058527] text-white text-sm rounded hover:bg-[#046a1f] disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5" />
+              保存
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#666666] text-white text-sm rounded hover:bg-[#555555]"
+            >
+              <X className="w-3.5 h-3.5" />
+              取消
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#E5E5E5] text-[#666666] rounded-md hover:border-[#DC4C3E] hover:text-[#DC4C3E] transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            実績を追加
+          </button>
+        )
       )}
     </div>
   )
