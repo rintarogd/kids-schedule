@@ -1,23 +1,27 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { format, startOfWeek, addDays } from 'date-fns'
+import { format, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
 import TaskItem from '@/components/TaskItem'
-import { WEEKDAYS, type ScheduledTask } from '@/types'
+import { WEEKDAYS_MONDAY_START, mondayIndexToDayOfWeek, type ScheduledTask } from '@/types'
+import { getWeekdayColorClass } from '@/lib/weekendColors'
 
 export default function SchedulePage() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  )
   const { isParent, selectedChildId } = useFamily()
   const today = new Date()
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 }) // 月曜始まり
 
   useEffect(() => {
     const fetchWeeklyTasks = async () => {
+      setLoading(true)
       const supabase = createClient()
 
       const {
@@ -29,7 +33,7 @@ export default function SchedulePage() {
       // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
       const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
 
-      const weekStartStr = format(weekStart, 'yyyy-MM-dd')
+      const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd')
 
       const { data } = await supabase
         .from('scheduled_tasks')
@@ -60,13 +64,15 @@ export default function SchedulePage() {
     }
 
     fetchWeeklyTasks()
-  }, [selectedChildId, isParent])
+  }, [selectedChildId, isParent, currentWeekStart])
 
-  // 曜日ごとにタスクをグループ化
-  const tasksByDay = WEEKDAYS.map((_, index) => {
-    // 日曜=0, 月曜=1...に変換
-    const dayIndex = index
-    return tasks.filter((t) => t.dayOfWeek === dayIndex)
+  const goToPrevWeek = () => setCurrentWeekStart((prev) => subWeeks(prev, 1))
+  const goToNextWeek = () => setCurrentWeekStart((prev) => addWeeks(prev, 1))
+
+  // 曜日ごとにタスクをグループ化（月曜始まり）
+  const tasksByDay = WEEKDAYS_MONDAY_START.map((_, mondayIndex) => {
+    const dayOfWeek = mondayIndexToDayOfWeek(mondayIndex)
+    return tasks.filter((t) => t.dayOfWeek === dayOfWeek)
   })
 
   if (loading) {
@@ -77,13 +83,31 @@ export default function SchedulePage() {
     )
   }
 
+  const weekEnd = addDays(currentWeekStart, 6)
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-4 mt-2">
+      <div className="flex items-center justify-between mb-2 mt-2">
+        <button
+          type="button"
+          onClick={goToPrevWeek}
+          className="px-3 py-1 text-sm text-[#666666] hover:bg-[#F5F5F5] rounded"
+        >
+          ← 前へ
+        </button>
         <h2 className="text-lg font-medium text-[#202020]">
-          {format(weekStart, 'M月d日', { locale: ja })} 〜 の週
+          {format(currentWeekStart, 'M/d', { locale: ja })} 〜 {format(weekEnd, 'M/d', { locale: ja })} のスケジュール
         </h2>
+        <button
+          type="button"
+          onClick={goToNextWeek}
+          className="px-3 py-1 text-sm text-[#666666] hover:bg-[#F5F5F5] rounded"
+        >
+          次へ →
+        </button>
+      </div>
+      <div className="flex justify-end mb-4">
         <Link
           href="/schedule/edit"
           className="px-4 py-2 bg-[#DC4C3E] text-white text-sm rounded-md hover:bg-[#B03D32] transition-colors"
@@ -94,9 +118,9 @@ export default function SchedulePage() {
 
       {/* 週間スケジュール */}
       <div className="space-y-4 overflow-visible">
-        {WEEKDAYS.map((day, index) => {
-          const date = addDays(weekStart, index === 0 ? 6 : index - 1) // 月曜始まりに調整
-          const dayTasks = tasksByDay[index]
+        {WEEKDAYS_MONDAY_START.map((day, mondayIndex) => {
+          const date = addDays(currentWeekStart, mondayIndex)
+          const dayTasks = tasksByDay[mondayIndex]
           const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
 
           return (
@@ -116,7 +140,7 @@ export default function SchedulePage() {
               >
                 <span
                   className={`text-sm font-medium ${
-                    isToday ? 'text-[#DC4C3E]' : 'text-[#202020]'
+                    isToday ? 'text-[#DC4C3E]' : getWeekdayColorClass(mondayIndex) || 'text-[#202020]'
                   }`}
                 >
                   {day}曜日

@@ -9,12 +9,12 @@ import TodayAchievement from '@/components/TodayAchievement'
 import TaskRecorder from '@/components/TaskRecorder'
 import type { ScheduledTask, DailyRecord } from '@/types'
 
-type TaskWithRecord = ScheduledTask & {
-  record?: DailyRecord
+type TaskWithRecords = ScheduledTask & {
+  records: DailyRecord[]
 }
 
 export default function DashboardPage() {
-  const [tasks, setTasks] = useState<TaskWithRecord[]>([])
+  const [tasks, setTasks] = useState<TaskWithRecords[]>([])
   const [loading, setLoading] = useState(true)
   const { isParent, selectedChildId } = useFamily()
   const today = new Date()
@@ -55,10 +55,25 @@ export default function DashboardPage() {
       .eq('user_id', targetUserId)
       .eq('record_date', todayStr)
 
-    // タスクと記録を結合
-    const tasksWithRecords: TaskWithRecord[] = (scheduledTasks || []).map(
+    // タスクと記録を結合（複数セッション対応）
+    const tasksWithRecords: TaskWithRecords[] = (scheduledTasks || []).map(
       (task) => {
-        const record = records?.find((r) => r.scheduled_task_id === task.id)
+        // このタスクに関連するすべての記録を取得
+        const taskRecords = (records || [])
+          .filter((r) => r.scheduled_task_id === task.id)
+          .map((record) => ({
+            id: record.id,
+            userId: record.user_id,
+            scheduledTaskId: record.scheduled_task_id,
+            recordDate: record.record_date,
+            startTime: record.start_time,
+            endTime: record.end_time,
+            actualMinutes: record.actual_minutes,
+            isCompleted: record.is_completed,
+            createdAt: record.created_at,
+            updatedAt: record.updated_at,
+          }))
+
         return {
           id: task.id,
           userId: task.user_id,
@@ -71,20 +86,7 @@ export default function DashboardPage() {
           taskType: task.task_type,
           createdAt: task.created_at,
           updatedAt: task.updated_at,
-          record: record
-            ? {
-                id: record.id,
-                userId: record.user_id,
-                scheduledTaskId: record.scheduled_task_id,
-                recordDate: record.record_date,
-                startTime: record.start_time,
-                endTime: record.end_time,
-                actualMinutes: record.actual_minutes,
-                isCompleted: record.is_completed,
-                createdAt: record.created_at,
-                updatedAt: record.updated_at,
-              }
-            : undefined,
+          records: taskRecords,
         }
       }
     )
@@ -97,22 +99,26 @@ export default function DashboardPage() {
     fetchTodayTasks()
   }, [selectedChildId, isParent])
 
-  // 達成時間を計算
+  // 達成時間を計算（複数セッション対応）
+  const getTaskTotalMinutes = (task: TaskWithRecords) => {
+    return task.records.reduce((sum, r) => sum + (r.actualMinutes || 0), 0)
+  }
+
   const totalAchievedMinutes = tasks.reduce((sum, task) => {
-    return sum + (task.record?.actualMinutes || 0)
+    return sum + getTaskTotalMinutes(task)
   }, 0)
 
   // カテゴリ別の達成時間
   const categoryStats = {
     study: tasks
       .filter((t) => t.category === 'study')
-      .reduce((sum, t) => sum + (t.record?.actualMinutes || 0), 0),
+      .reduce((sum, t) => sum + getTaskTotalMinutes(t), 0),
     lesson: tasks
       .filter((t) => t.category === 'lesson')
-      .reduce((sum, t) => sum + (t.record?.actualMinutes || 0), 0),
+      .reduce((sum, t) => sum + getTaskTotalMinutes(t), 0),
     chore: tasks
       .filter((t) => t.category === 'chore')
-      .reduce((sum, t) => sum + (t.record?.actualMinutes || 0), 0),
+      .reduce((sum, t) => sum + getTaskTotalMinutes(t), 0),
   }
 
   if (loading) {
@@ -155,7 +161,7 @@ export default function DashboardPage() {
               <TaskRecorder
                 key={task.id}
                 task={task}
-                record={task.record}
+                records={task.records}
                 onUpdate={fetchTodayTasks}
               />
             ))}

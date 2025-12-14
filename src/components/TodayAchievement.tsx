@@ -1,6 +1,14 @@
 'use client'
 
+import { Clock, BookOpen, Music, Sparkles, type LucideIcon } from 'lucide-react'
 import { CATEGORY_CONFIG } from '@/types'
+
+// カテゴリ別アイコン
+const categoryIcons: Record<string, LucideIcon> = {
+  study: BookOpen,
+  lesson: Music,
+  chore: Sparkles,
+}
 
 type TodayAchievementProps = {
   totalMinutes: number
@@ -51,7 +59,8 @@ export default function TodayAchievement({
   return (
     <div className="bg-white rounded-lg border border-[#E5E5E5] p-6">
       {/* タイトル */}
-      <h2 className="text-center text-[#666666] text-sm mb-4">
+      <h2 className="flex items-center justify-center gap-1.5 text-[#666666] text-sm mb-4">
+        <Clock className="w-4 h-4" />
         今日のがんばり時間
       </h2>
 
@@ -78,15 +87,14 @@ export default function TodayAchievement({
         {categories.map((cat) => {
           const { hours: h, mins: m } = formatTime(cat.minutes)
           const percentage = maxMinutes > 0 ? (cat.minutes / maxMinutes) * 100 : 0
+          const Icon = categoryIcons[cat.key]
 
           return (
             <div key={cat.key} className="flex items-center gap-3">
-              <span
-                className="text-sm w-20 truncate"
-                style={{ color: cat.color }}
-              >
-                {cat.label}
-              </span>
+              <div className="flex items-center gap-1.5 w-20" style={{ color: cat.color }}>
+                <Icon className="w-4 h-4" />
+                <span className="text-sm truncate">{cat.label}</span>
+              </div>
               <span className="text-sm text-[#666666] w-12">
                 {h > 0 ? `${h}:${m.toString().padStart(2, '0')}` : `${m}分`}
               </span>

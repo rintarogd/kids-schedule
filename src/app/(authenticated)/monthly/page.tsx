@@ -9,10 +9,13 @@ import {
   isSameMonth,
   startOfWeek,
   endOfWeek,
+  addMonths,
+  subMonths,
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
+import { getWeekdayColorClassFromLabel } from '@/lib/weekendColors'
 
 type DayData = {
   date: Date
@@ -21,14 +24,19 @@ type DayData = {
 
 export default function MonthlyPage() {
   const [dayData, setDayData] = useState<Map<string, number>>(new Map())
+  const [plannedTotal, setPlannedTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date())
+  const [hasDataPrevMonth, setHasDataPrevMonth] = useState(false)
+  const [hasDataNextMonth, setHasDataNextMonth] = useState(false)
   const { isParent, selectedChildId } = useFamily()
   const today = new Date()
-  const monthStart = startOfMonth(today)
-  const monthEnd = endOfMonth(today)
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(currentMonth)
 
   useEffect(() => {
     const fetchMonthlyData = async () => {
+      setLoading(true)
       const supabase = createClient()
 
       const {
@@ -40,6 +48,7 @@ export default function MonthlyPage() {
       // 親の場合は選択した子供のデータ、子供の場合は自分のデータ
       const targetUserId = isParent && selectedChildId ? selectedChildId : user.id
 
+      // 実績取得
       const { data: records } = await supabase
         .from('daily_records')
         .select('record_date, actual_minutes')
@@ -54,11 +63,48 @@ export default function MonthlyPage() {
       })
 
       setDayData(dataMap)
+
+      // 予定時間取得（月内の全週間スケジュールから）
+      const { data: tasks } = await supabase
+        .from('scheduled_tasks')
+        .select('planned_minutes')
+        .eq('user_id', targetUserId)
+        .gte('week_start', format(monthStart, 'yyyy-MM-dd'))
+        .lte('week_start', format(monthEnd, 'yyyy-MM-dd'))
+
+      const planned = (tasks || []).reduce((sum, t) => sum + t.planned_minutes, 0)
+      setPlannedTotal(planned)
+
+      // 前後の月にデータがあるかチェック
+      const prevMonthStart = format(startOfMonth(subMonths(currentMonth, 1)), 'yyyy-MM-dd')
+      const prevMonthEnd = format(endOfMonth(subMonths(currentMonth, 1)), 'yyyy-MM-dd')
+      const nextMonthStart = format(startOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd')
+      const nextMonthEnd = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd')
+
+      const { count: prevCount } = await supabase
+        .from('daily_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', targetUserId)
+        .gte('record_date', prevMonthStart)
+        .lte('record_date', prevMonthEnd)
+
+      const { count: nextCount } = await supabase
+        .from('daily_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', targetUserId)
+        .gte('record_date', nextMonthStart)
+        .lte('record_date', nextMonthEnd)
+
+      setHasDataPrevMonth((prevCount || 0) > 0)
+      setHasDataNextMonth((nextCount || 0) > 0)
       setLoading(false)
     }
 
     fetchMonthlyData()
-  }, [selectedChildId, isParent])
+  }, [selectedChildId, isParent, currentMonth])
+
+  const goToPrevMonth = () => setCurrentMonth((prev) => subMonths(prev, 1))
+  const goToNextMonth = () => setCurrentMonth((prev) => addMonths(prev, 1))
 
   // カレンダーの日付を生成（週の始まりから終わりまで）
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
@@ -85,19 +131,68 @@ export default function MonthlyPage() {
     )
   }
 
+  const achievementRate =
+    plannedTotal > 0 ? Math.round((totalMinutes / plannedTotal) * 100) : 0
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* ヘッダー */}
-      <h2 className="text-xl font-medium text-[#202020] mb-6">
-        {format(today, 'yyyy年M月', { locale: ja })}の月間レポート
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <button
+          type="button"
+          onClick={goToPrevMonth}
+          disabled={!hasDataPrevMonth}
+          className={`px-3 py-1 text-sm rounded ${
+            hasDataPrevMonth
+              ? 'text-[#666666] hover:bg-[#F5F5F5]'
+              : 'text-[#CCCCCC] cursor-not-allowed'
+          }`}
+        >
+          ← 前へ
+        </button>
+        <h2 className="text-xl font-medium text-[#202020]">
+          {format(currentMonth, 'yyyy年M月', { locale: ja })}の月間レポート
+        </h2>
+        <button
+          type="button"
+          onClick={goToNextMonth}
+          disabled={!hasDataNextMonth}
+          className={`px-3 py-1 text-sm rounded ${
+            hasDataNextMonth
+              ? 'text-[#666666] hover:bg-[#F5F5F5]'
+              : 'text-[#CCCCCC] cursor-not-allowed'
+          }`}
+        >
+          次へ →
+        </button>
+      </div>
 
-      {/* サマリー */}
-      <div className="bg-white rounded-lg border border-[#E5E5E5] p-6 mb-6 text-center">
-        <div className="text-4xl font-bold text-[#DC4C3E]">
-          {Math.floor(totalMinutes / 60)}時間{totalMinutes % 60}分
+      {/* サマリー（週間レポートと同じ形式） */}
+      <div className="bg-white rounded-lg border border-[#E5E5E5] p-6 mb-6">
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-2xl font-bold text-[#202020]">
+              {Math.floor(plannedTotal / 60)}:{(plannedTotal % 60)
+                .toString()
+                .padStart(2, '0')}
+            </div>
+            <div className="text-sm text-[#666666]">予定</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-[#DC4C3E]">
+              {Math.floor(totalMinutes / 60)}:{(totalMinutes % 60)
+                .toString()
+                .padStart(2, '0')}
+            </div>
+            <div className="text-sm text-[#666666]">実績</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-[#058527]">
+              {achievementRate}%
+            </div>
+            <div className="text-sm text-[#666666]">達成率</div>
+          </div>
         </div>
-        <div className="text-base text-[#666666] mt-2">今月の合計達成時間</div>
       </div>
 
       {/* カレンダー */}
@@ -107,7 +202,7 @@ export default function MonthlyPage() {
           {['月', '火', '水', '木', '金', '土', '日'].map((day) => (
             <div
               key={day}
-              className="text-center text-sm font-medium text-[#666666] py-2"
+              className={`text-center text-sm font-medium py-2 ${getWeekdayColorClassFromLabel(day) || 'text-[#666666]'}`}
             >
               {day}
             </div>

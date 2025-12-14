@@ -2,7 +2,9 @@
 
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { Clock } from 'lucide-react'
 import ChildSwitcher from './ChildSwitcher'
+import { getWeekdayColorClassFromDate } from '@/lib/weekendColors'
 
 type HeaderProps = {
   userName: string
@@ -10,18 +12,26 @@ type HeaderProps = {
 
 export default function Header({ userName }: HeaderProps) {
   const today = new Date()
-  const formattedDate = format(today, 'M月d日（E）', { locale: ja })
+  const datePart = format(today, 'M月d日', { locale: ja })
+  const dayPart = format(today, '（E）', { locale: ja })
+  const weekendColor = getWeekdayColorClassFromDate(today)
 
   return (
     <header className="h-14 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 md:px-6">
       {/* モバイル: ロゴ */}
       <div className="md:hidden">
-        <h1 className="text-lg font-bold text-[#202020]">じかんバンク</h1>
+        <h1 className="flex items-center gap-1.5 text-lg font-bold text-[#202020]">
+          <Clock className="w-5 h-5" />
+          じかんバンク
+        </h1>
       </div>
 
       {/* PC: 日付 */}
       <div className="hidden md:block">
-        <span className="text-[#202020] font-medium">{formattedDate}</span>
+        <span className="text-[#202020] font-medium">
+          {datePart}
+          <span className={weekendColor}>{dayPart}</span>
+        </span>
       </div>
 
       {/* 右側: 子供切り替え + ユーザー情報 */}

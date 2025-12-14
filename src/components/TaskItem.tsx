@@ -1,5 +1,6 @@
 'use client'
 
+import { Check } from 'lucide-react'
 import { CATEGORY_CONFIG, type ScheduledTask, type DailyRecord, type TaskCategory } from '@/types'
 
 type TaskItemProps = {
@@ -51,19 +52,7 @@ export default function TaskItem({
         style={{ borderColor: isCompleted ? '#058527' : color }}
       >
         {isCompleted && (
-          <svg
-            className="w-3 h-3 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+          <Check className="w-3 h-3 text-white" strokeWidth={3} />
         )}
       </div>
 

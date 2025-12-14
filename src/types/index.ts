@@ -124,8 +124,21 @@ export const CATEGORY_CONFIG = {
   },
 } as const
 
-// 曜日の定義
+// 曜日の定義（日曜始まり、DBのday_of_weekと対応）
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
+
+// 曜日の定義（月曜始まり、UI表示用）
+export const WEEKDAYS_MONDAY_START = ['月', '火', '水', '木', '金', '土', '日'] as const
+
+// 月曜始まりのインデックスからDBのday_of_weekに変換（0=月→1, 6=日→0）
+export const mondayIndexToDayOfWeek = (mondayIndex: number): number => {
+  return mondayIndex === 6 ? 0 : mondayIndex + 1
+}
+
+// DBのday_of_weekから月曜始まりのインデックスに変換（0=日→6, 1=月→0）
+export const dayOfWeekToMondayIndex = (dayOfWeek: number): number => {
+  return dayOfWeek === 0 ? 6 : dayOfWeek - 1
+}
 
 // 曜日の英語定義（date-fns用）
 export const WEEKDAY_NAMES = [

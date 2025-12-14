@@ -9,6 +9,7 @@ type TaskFormProps = {
     subcategory: string
     taskType: string | null
     plannedMinutes: number
+    customText?: string
   }) => void
   onCancel: () => void
 }
@@ -18,6 +19,7 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
   const [subcategory, setSubcategory] = useState('')
   const [taskType, setTaskType] = useState<string | null>(null)
   const [minutes, setMinutes] = useState(30)
+  const [customText, setCustomText] = useState('')
 
   const categoryConfig = CATEGORY_CONFIG[category]
   const subcategories = categoryConfig.subcategories
@@ -27,18 +29,28 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
     setCategory(newCategory)
     setSubcategory('')
     setTaskType(null)
+    setCustomText('')
     setMinutes(CATEGORY_CONFIG[newCategory].defaultMinutes)
   }
+
+  // 「その他」が選択されているかどうか
+  const isOtherSelected = subcategory === 'その他'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!subcategory) return
 
+    // 「その他」の場合はカスタムテキストを含める
+    const finalSubcategory = isOtherSelected && customText.trim()
+      ? `その他: ${customText.trim()}`
+      : subcategory
+
     onSubmit({
       category,
-      subcategory,
+      subcategory: finalSubcategory,
       taskType,
       plannedMinutes: minutes,
+      customText: isOtherSelected ? customText.trim() : undefined,
     })
   }
 
@@ -81,7 +93,10 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
             <button
               key={sub}
               type="button"
-              onClick={() => setSubcategory(sub)}
+              onClick={() => {
+                setSubcategory(sub)
+                if (sub !== 'その他') setCustomText('')
+              }}
               className={`px-3 py-2 rounded-md text-sm transition-colors ${
                 subcategory === sub
                   ? 'bg-[#202020] text-white'
@@ -92,6 +107,21 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
             </button>
           ))}
         </div>
+
+        {/* その他選択時のカスタムテキスト入力 */}
+        {isOtherSelected && (
+          <div className="mt-3">
+            <input
+              type="text"
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              placeholder="内容を入力（例: 漢字練習、お風呂掃除）"
+              maxLength={30}
+              className="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#202020] focus:border-transparent text-sm"
+            />
+            <p className="text-xs text-[#999999] mt-1">{customText.length}/30文字</p>
+          </div>
+        )}
       </div>
 
       {/* タスク種別選択（お手伝い以外） */}

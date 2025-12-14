@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { X, UserPlus, User, Mail, Lock, AlertCircle } from 'lucide-react'
 
 type Props = {
   isOpen: boolean
@@ -62,12 +63,17 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b border-[#E5E5E5]">
-          <h2 className="text-lg font-medium text-[#202020]">子どもを追加</h2>
+          <h2 className="flex items-center gap-2 text-lg font-medium text-[#202020]">
+            <UserPlus className="w-5 h-5" />
+            子どもを追加
+          </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="text-[#666666] hover:text-[#202020] text-2xl leading-none"
+            className="p-1 text-[#666666] hover:text-[#202020] rounded hover:bg-[#F5F5F5]"
+            aria-label="閉じる"
           >
-            &times;
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -110,7 +116,8 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: Props) {
           </div>
 
           {error && (
-            <div className="text-[#DC4C3E] text-sm bg-red-50 p-3 rounded-md">
+            <div className="flex items-center gap-2 text-[#DC4C3E] text-sm bg-red-50 p-3 rounded-md">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
           )}

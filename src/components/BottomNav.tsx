@@ -2,12 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { LayoutDashboard, Calendar, BarChart2, TrendingUp, type LucideIcon } from 'lucide-react'
 
-const navItems = [
-  { href: '/dashboard', label: '今日', icon: '📊' },
-  { href: '/schedule', label: '予定', icon: '📅' },
-  { href: '/weekly', label: '週間', icon: '📈' },
-  { href: '/monthly', label: '月間', icon: '📊' },
+type NavItem = {
+  href: string
+  label: string
+  icon: LucideIcon
+}
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', label: '今日', icon: LayoutDashboard },
+  { href: '/schedule', label: '予定', icon: Calendar },
+  { href: '/weekly', label: '週間', icon: BarChart2 },
+  { href: '/monthly', label: '月間', icon: TrendingUp },
 ]
 
 export default function BottomNav() {
@@ -18,6 +25,7 @@ export default function BottomNav() {
       <div className="flex justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
@@ -26,7 +34,7 @@ export default function BottomNav() {
                 isActive ? 'text-[#DC4C3E]' : 'text-[#666666]'
               }`}
             >
-              <span className="text-xl mb-1">{item.icon}</span>
+              <Icon className="w-5 h-5 mb-1" />
               <span className="text-xs">{item.label}</span>
             </Link>
           )
