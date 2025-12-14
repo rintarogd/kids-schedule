@@ -12,7 +12,6 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns'
-import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
 import { getWeekdayColorClassFromLabel } from '@/lib/weekendColors'
@@ -151,7 +150,7 @@ export default function MonthlyPage() {
           ← 前へ
         </button>
         <h2 className="text-xl font-medium text-[#202020]">
-          {format(currentMonth, 'yyyy年M月', { locale: ja })}の月間レポート
+          {format(currentMonth, 'yyyy/M')} の月間レポート
         </h2>
         <button
           type="button"
