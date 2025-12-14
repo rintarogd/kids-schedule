@@ -190,6 +190,31 @@ export default function TaskRecorder({
     onUpdate()
   }
 
+  // 予定（スケジュール）削除
+  const handleDeleteSchedule = async () => {
+    const confirmed = window.confirm(`「${task.subcategory}」の予定を削除しますか？\nこの操作は元に戻せません。`)
+    if (!confirmed) return
+
+    setLoading(true)
+    const response = await fetch(`/api/scheduled-tasks?id=${task.id}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('予定削除エラー:', error)
+      alert(`予定の削除に失敗しました: ${error.error}`)
+      setLoading(false)
+      return
+    }
+
+    setLoading(false)
+    onUpdate()
+  }
+
+  // 実績がまだ記録されていないかどうか
+  const hasNoRecords = totalMinutes === 0 && !activeSession
+
   return (
     <div className="bg-white rounded-lg border border-[#E5E5E5] p-4">
       {/* タスク情報 */}
@@ -207,12 +232,23 @@ export default function TaskRecorder({
             {categoryConfig?.label} · 予定{task.plannedMinutes}分
           </div>
         </div>
-        {totalMinutes > 0 && (
+        {totalMinutes > 0 ? (
           <div className="flex items-center gap-1 text-sm text-[#058527] font-medium">
             <Check className="w-4 h-4" />
             合計{totalMinutes}分達成！
           </div>
-        )}
+        ) : hasNoRecords ? (
+          <button
+            type="button"
+            onClick={handleDeleteSchedule}
+            disabled={loading}
+            className="flex items-center gap-1 text-xs text-[#DC4C3E] hover:text-[#B03D32] transition-colors"
+            aria-label="予定を削除する"
+          >
+            <X className="w-3.5 h-3.5" />
+            予定を削除する
+          </button>
+        ) : null}
       </div>
 
       {/* 完了したセッション一覧（時間付き） */}

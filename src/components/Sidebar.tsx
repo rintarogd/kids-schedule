@@ -71,6 +71,7 @@ export default function Sidebar({ userName, onLogout }: SidebarProps) {
           <LogOut className="w-4 h-4 mr-2" />
           ログアウト
         </button>
+        <div className="mt-3 text-xs text-[#CCCCCC]">ver 1.0.1</div>
       </div>
     </aside>
   )

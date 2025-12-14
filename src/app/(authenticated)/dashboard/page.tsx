@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { format, addDays, subDays, startOfWeek } from 'date-fns'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, HelpCircle } from 'lucide-react'
 import { ja } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
@@ -22,6 +22,8 @@ export default function DashboardPage() {
 
   const [tasks, setTasks] = useState<TaskWithRecords[]>([])
   const [loading, setLoading] = useState(true)
+  const [showTooltip, setShowTooltip] = useState(false)
+  const tooltipRef = useRef<HTMLDivElement>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (dateParam) {
       const parsed = new Date(dateParam)
@@ -41,6 +43,21 @@ export default function DashboardPage() {
       }
     }
   }, [dateParam])
+
+  // ツールチップ外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowTooltip(false)
+      }
+    }
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showTooltip])
 
   const fetchTasks = async (targetDate: Date) => {
     setLoading(true)
@@ -212,13 +229,31 @@ export default function DashboardPage() {
         )}
 
         {/* スケジュールにない実績を追加するボタン */}
-        <Link
-          href={`/schedule/add-record?date=${format(selectedDate, 'yyyy-MM-dd')}`}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#E5E5E5] text-[#666666] rounded-lg hover:border-[#DC4C3E] hover:text-[#DC4C3E] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          スケジュールにない実績を追加する
-        </Link>
+        <div className="mt-4 relative" ref={tooltipRef}>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/schedule/add-record?date=${format(selectedDate, 'yyyy-MM-dd')}`}
+              className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#E5E5E5] text-[#666666] rounded-lg hover:border-[#DC4C3E] hover:text-[#DC4C3E] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              スケジュールにない実績を追加する
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowTooltip(!showTooltip)}
+              className="p-2 text-[#999999] hover:text-[#666666] transition-colors"
+              aria-label="説明を表示"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+          </div>
+          {showTooltip && (
+            <div className="absolute right-0 top-full mt-2 w-72 p-3 bg-[#202020] text-white text-sm rounded-lg shadow-lg z-10">
+              <p>スケジュールに登録していない活動を、あとから記録したいときに使います。</p>
+              <p className="mt-2 text-[#999999]">実績を登録すると自動的にスケジュールも一緒に登録されます。</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
