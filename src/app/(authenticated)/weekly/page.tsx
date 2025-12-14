@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import Link from 'next/link'
+import { Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useFamily } from '@/contexts/FamilyContext'
 import { WEEKDAYS_MONDAY_START } from '@/types'
@@ -225,8 +226,9 @@ export default function WeeklyPage() {
                 </div>
                 <Link
                   href={`/dashboard?date=${stat.date}`}
-                  className="text-xs text-[#999999] hover:text-[#DC4C3E] transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1 text-xs text-[#999999] hover:text-[#DC4C3E] transition-colors whitespace-nowrap"
                 >
+                  <Pencil className="w-3 h-3" />
                   修正
                 </Link>
               </div>
