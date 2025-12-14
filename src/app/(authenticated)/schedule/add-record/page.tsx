@@ -22,7 +22,7 @@ export default function AddRecordPage() {
   const [category, setCategory] = useState<TaskCategory>('study')
   const [subcategory, setSubcategory] = useState('')
   const [taskType, setTaskType] = useState<string | null>(null)
-  const [plannedMinutes, setPlannedMinutes] = useState(30)
+  const [startTime, setStartTime] = useState('09:00')
   const [actualMinutes, setActualMinutes] = useState(30)
   const [customText, setCustomText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,8 +37,16 @@ export default function AddRecordPage() {
     setTaskType(null)
     setCustomText('')
     const defaultMin = CATEGORY_CONFIG[newCategory].defaultMinutes
-    setPlannedMinutes(defaultMin)
     setActualMinutes(defaultMin)
+  }
+
+  // 開始時間と実績時間から終了時間を計算
+  const calculateEndTime = (): string => {
+    const [h, m] = startTime.split(':').map(Number)
+    const totalMinutes = h * 60 + m + actualMinutes
+    const endH = Math.floor(totalMinutes / 60) % 24
+    const endM = totalMinutes % 60
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
   }
 
   const isOtherSelected = subcategory === 'その他'
@@ -83,7 +91,7 @@ export default function AddRecordPage() {
         category,
         subcategory: finalSubcategory,
         task_type: taskType,
-        planned_minutes: plannedMinutes,
+        planned_minutes: actualMinutes,
       })
       .select()
       .single()
@@ -94,13 +102,14 @@ export default function AddRecordPage() {
       return
     }
 
-    // 2. 実績も作成
+    // 2. 実績も作成（開始・終了時間付き）
+    const endTime = calculateEndTime()
     const { error: recordError } = await supabase.from('daily_records').insert({
       user_id: targetUserId,
       scheduled_task_id: scheduleData.id,
       record_date: dateStr,
-      start_time: null,
-      end_time: null,
+      start_time: `${startTime}:00`,
+      end_time: `${endTime}:00`,
       actual_minutes: actualMinutes,
       is_completed: true,
     })
@@ -242,39 +251,18 @@ export default function AddRecordPage() {
             </div>
           )}
 
-          {/* 予定時間 */}
+          {/* 開始時間 */}
           <div>
             <label className="block text-sm font-medium text-[#202020] mb-2">
-              予定時間
+              開始時間
             </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={plannedMinutes}
-                onChange={(e) => setPlannedMinutes(Number(e.target.value))}
-                min={5}
-                max={180}
-                step={5}
-                className="w-20 px-3 py-2 border border-[#E5E5E5] rounded-md text-center"
-              />
-              <span className="text-[#666666]">分</span>
-            </div>
-            <div className="flex gap-2 mt-2">
-              {[15, 30, 45, 60].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPlannedMinutes(m)}
-                  className={`px-3 py-1 rounded text-xs ${
-                    plannedMinutes === m
-                      ? 'bg-[#202020] text-white'
-                      : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#E5E5E5]'
-                  }`}
-                >
-                  {m}分
-                </button>
-              ))}
-            </div>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              aria-label="開始時間"
+              className="px-3 py-2 border border-[#E5E5E5] rounded-md text-center"
+            />
           </div>
 
           {/* 実績時間 */}
@@ -288,14 +276,17 @@ export default function AddRecordPage() {
                 value={actualMinutes}
                 onChange={(e) => setActualMinutes(Number(e.target.value))}
                 min={1}
-                max={180}
-                step={5}
+                max={480}
+                step={1}
                 className="w-20 px-3 py-2 border border-[#E5E5E5] rounded-md text-center"
               />
               <span className="text-[#666666]">分</span>
+              <span className="text-sm text-[#999999]">
+                → {calculateEndTime()} 終了
+              </span>
             </div>
             <div className="flex gap-2 mt-2">
-              {[15, 30, 45, 60].map((m) => (
+              {[15, 30, 45, 60, 90, 120].map((m) => (
                 <button
                   key={m}
                   type="button"
