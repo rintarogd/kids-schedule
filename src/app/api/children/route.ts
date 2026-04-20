@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Service Role Key を使用してAdmin操作を行う
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.SUPABASE_SECRET_KEY!,
       {
         auth: {
           autoRefreshToken: false,
